@@ -1,0 +1,176 @@
+@startuml
+!pragma layout smetana
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam classBackgroundColor #F3F7FC
+skinparam classBorderColor #274869
+skinparam ArrowColor #43576B
+skinparam packageStyle rectangle
+hide empty members
+title Бібліотечна система — діаграма класів
+abstract class User <<model>> {
+  #id: int
+  #name: string
+  #email: string
+  #passwordHash: string
+  #status: string
+  --
+  +authenticate(password: string): bool
+  +changeEmail(email: string): void
+  +changePassword(password: string): void
+  +activate(): void
+  +deactivate(): void
+}
+class Reader <<model>> {
+  #cardNumber: string
+  #registeredAt: DateTime
+  #expiresAt: DateTime
+  #loanLimit: int
+  #blockedUntil: ?DateTime
+  --
+  +canBorrow(activeCount: int): bool
+  +renewCard(expiresAt: DateTime): void
+  +block(until: DateTime): void
+  +unblock(): void
+  +calculatePenalty(overdueDays: int, rate: float): float
+}
+class Librarian <<model>> {
+  #employeeNumber: string
+  #position: string
+  #hiredAt: DateTime
+  #deskNumber: string
+  #isAdministrator: bool
+  --
+  +verifyReader(reader: Reader): bool
+  +issueLoan(reader: Reader, copies: BookCopy[]): Loan
+  +acceptReturn(item: LoanItem): void
+  +registerCopy(book: Book, code: string): BookCopy
+  +canManageUsers(): bool
+}
+class Catalog <<model>> {
+  #id: int
+  #name: string
+  #description: string
+  #isPublic: bool
+  #updatedAt: DateTime
+  --
+  +addBook(book: Book): void
+  +removeBook(book: Book): void
+  +search(query: string): Book[]
+  +findByCategory(category: string): Book[]
+  +countBooks(): int
+}
+class Book <<model>> {
+  #id: int
+  #title: string
+  #author: string
+  #isbn: string
+  #publicationYear: int
+  #category: string
+  --
+  +rename(title: string): void
+  +changeAuthor(author: string): void
+  +updateIsbn(isbn: string): void
+  +isPublishedAfter(year: int): bool
+  +getAvailableCopies(): BookCopy[]
+}
+class BookCopy <<model>> {
+  #id: int
+  #bookId: int
+  #inventoryNumber: string
+  #shelfCode: string
+  #status: string
+  --
+  +isAvailable(): bool
+  +markLoaned(): void
+  +markAvailable(): void
+  +markLost(): void
+  +moveToShelf(shelfCode: string): void
+}
+class Loan <<model>> {
+  #id: int
+  #readerId: int
+  #librarianId: int
+  #issuedAt: DateTime
+  #status: string
+  --
+  +addItem(copy: BookCopy, dueAt: DateTime): LoanItem
+  +getItems(): LoanItem[]
+  +countItems(): int
+  +close(): void
+  +getTotalPenalty(): float
+}
+class LoanItem <<model>> {
+  #id: int
+  #loanId: int
+  #bookCopyId: int
+  #dueAt: DateTime
+  #returnedAt: ?DateTime
+  #penaltyAmount: float
+  --
+  +isOverdue(at: DateTime): bool
+  +getOverdueDays(at: DateTime): int
+  +calculatePenalty(days: int, rate: float): float
+  +recordReturn(at: DateTime): void
+  +extendDueDate(newDate: DateTime): void
+}
+class Reservation <<model>> {
+  #id: int
+  #readerId: int
+  #bookId: int
+  #createdAt: DateTime
+  #expiresAt: DateTime
+  #status: string
+  --
+  +confirm(): void
+  +cancel(): void
+  +expire(at: DateTime): void
+  +isActive(at: DateTime): bool
+  +fulfill(loanItem: LoanItem): void
+}
+class CatalogController <<controller>> {
+  #catalog: Catalog
+  #pageSize: int
+  #allowedSorts: string[]
+  #defaultSort: string
+  #viewPrefix: string
+  --
+  +index(query: string, page: int): View
+  +show(bookId: int): View
+  +store(data: array): RedirectResponse
+  +update(bookId: int, data: array): RedirectResponse
+  +destroy(bookId: int): RedirectResponse
+}
+class LoanController <<controller>> {
+  #loanModel: Loan
+  #readerModel: Reader
+  #copyModel: BookCopy
+  #defaultLoanDays: int
+  #dailyPenaltyRate: float
+  --
+  +index(readerId: int): View
+  +create(readerId: int): View
+  +store(readerId: int, copyIds: int[]): RedirectResponse
+  +returnItem(itemId: int, at: DateTime): RedirectResponse
+  +extend(itemId: int, dueAt: DateTime): RedirectResponse
+}
+User <|-- Reader
+User <|-- Librarian
+Catalog "0..*" o-- "0..*" Book : добірка
+Book "1" -- "0..*" BookCopy : примірники
+Reader "1" -- "0..*" Loan : отримує
+Librarian "1" -- "0..*" Loan : оформлює
+Loan "1" *-- "1..*" LoanItem : складається з
+BookCopy "1" -- "0..*" LoanItem : історія видач
+Reader "1" -- "0..*" Reservation : створює
+Book "1" -- "0..*" Reservation : бронювання
+CatalogController ..> Catalog : використовує
+CatalogController ..> Book : керує
+LoanController ..> Loan : керує
+LoanController ..> Reader : перевіряє
+LoanController ..> BookCopy : змінює стан
+@enduml

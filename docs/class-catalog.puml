@@ -1,0 +1,75 @@
+@startuml
+!pragma layout smetana
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam classBackgroundColor #F3F7FC
+skinparam classBorderColor #274869
+skinparam ArrowColor #43576B
+skinparam packageStyle rectangle
+hide empty members
+class Catalog <<model>> {
+  #id: int
+  #name: string
+  #description: string
+  #isPublic: bool
+  #updatedAt: DateTime
+  --
+  +addBook(book: Book): void
+  +removeBook(book: Book): void
+  +search(query: string): Book[]
+  +findByCategory(category: string): Book[]
+  +countBooks(): int
+}
+
+class Book <<model>> {
+  #id: int
+  #title: string
+  #author: string
+  #isbn: string
+  #publicationYear: int
+  #category: string
+  --
+  +rename(title: string): void
+  +changeAuthor(author: string): void
+  +updateIsbn(isbn: string): void
+  +isPublishedAfter(year: int): bool
+  +getAvailableCopies(): BookCopy[]
+}
+
+class BookCopy <<model>> {
+  #id: int
+  #bookId: int
+  #inventoryNumber: string
+  #shelfCode: string
+  #status: string
+  --
+  +isAvailable(): bool
+  +markLoaned(): void
+  +markAvailable(): void
+  +markLost(): void
+  +moveToShelf(shelfCode: string): void
+}
+
+class Reservation <<model>> {
+  #id: int
+  #readerId: int
+  #bookId: int
+  #createdAt: DateTime
+  #expiresAt: DateTime
+  #status: string
+  --
+  +confirm(): void
+  +cancel(): void
+  +expire(at: DateTime): void
+  +isActive(at: DateTime): bool
+  +fulfill(loanItem: LoanItem): void
+}
+
+Catalog "0..*" o-- "0..*" Book : добірка
+Book "1" -- "0..*" BookCopy : примірники
+Book "1" -- "0..*" Reservation : бронювання
+@enduml

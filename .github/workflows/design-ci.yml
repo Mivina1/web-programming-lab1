@@ -1,0 +1,39 @@
+name: System design CI
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, feature/system-design]
+permissions:
+  contents: read
+jobs:
+  validate-design:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate documentation and UML assets
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import xml.etree.ElementTree as ET
+          root = Path('docs')
+          text = (root / 'architecture.md').read_text(encoding='utf-8')
+          for name in ['use-case-diagram', 'class-diagram', 'class-users', 'class-catalog', 'class-loans']:
+              source = (root / (name + '.puml')).read_text(encoding='utf-8')
+              assert '@startuml' in source and '@enduml' in source, name
+              assert (root / (name + '.png')).read_bytes()[:8] == bytes([137,80,78,71,13,10,26,10]), name
+              assert ET.parse(root / (name + '.svg')).getroot().tag.endswith('svg'), name
+          for target in re.findall(r'!\[[^\]]*\]\(([^)]+)\)', text):
+              assert (root / target).is_file(), target
+          source = (root / 'class-diagram.puml').read_text(encoding='utf-8')
+          classes = re.findall(r'(?:abstract )?class (\w+)[^{]*\{([^}]+)\}', source)
+          assert len(classes) >= 10
+          for name, body in classes:
+              assert len(re.findall(r'^\s*#', body, re.M)) >= 5, name
+              assert len(re.findall(r'^\s*\+', body, re.M)) >= 5, name
+          for relationship in ['<|--', 'o--', '*--', ' -- ']:
+              assert relationship in source, relationship
+          print('Validated UML assets, image links, relationships and', len(classes), 'classes.')
+          PY

@@ -1,0 +1,38 @@
+@startuml
+!pragma layout smetana
+left to right direction
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam defaultFontSize 16
+skinparam shadowing false
+skinparam usecaseBackgroundColor #F3F7FC
+skinparam usecaseBorderColor #274869
+actor "Читач" as Reader
+actor "Бібліотекар" as Librarian
+actor "Адміністратор" as Admin
+Admin --|> Librarian
+rectangle "Автоматизована бібліотечна система" {
+usecase "Знайти книгу" as Search
+usecase "Забронювати книгу" as Reserve
+usecase "Переглянути власні видачі" as MyLoans
+usecase "Видати примірники" as Issue
+usecase "Прийняти повернення" as Return
+usecase "Зареєструвати примірник" as Register
+usecase "Керувати користувачами" as Users
+usecase "Налаштувати правила видачі" as Rules
+usecase "Сформувати звіт" as Report
+usecase "Перевірити право читача\nта доступність примірника" as Check
+usecase "Розрахувати штраф" as Fine
+}
+Reader -- Search
+Reader -- Reserve
+Reader -- MyLoans
+Librarian -- Issue
+Librarian -- Return
+Librarian -- Register
+Admin -- Users
+Admin -- Rules
+Admin -- Report
+Issue ..> Check : <<include>>
+Fine ..> Return : <<extend>>\n[повернення прострочене]
+@enduml
