@@ -1,0 +1,58 @@
+@startuml
+!pragma layout smetana
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam classBackgroundColor #F3F7FC
+skinparam classBorderColor #274869
+skinparam ArrowColor #43576B
+skinparam packageStyle rectangle
+hide empty members
+abstract class User <<model>> {
+  #id: int
+  #name: string
+  #email: string
+  #passwordHash: string
+  #status: string
+  --
+  +authenticate(password: string): bool
+  +changeEmail(email: string): void
+  +changePassword(password: string): void
+  +activate(): void
+  +deactivate(): void
+}
+
+class Reader <<model>> {
+  #cardNumber: string
+  #registeredAt: DateTime
+  #expiresAt: DateTime
+  #loanLimit: int
+  #blockedUntil: ?DateTime
+  --
+  +canBorrow(activeCount: int): bool
+  +renewCard(expiresAt: DateTime): void
+  +block(until: DateTime): void
+  +unblock(): void
+  +calculatePenalty(overdueDays: int, rate: float): float
+}
+
+class Librarian <<model>> {
+  #employeeNumber: string
+  #position: string
+  #hiredAt: DateTime
+  #deskNumber: string
+  #isAdministrator: bool
+  --
+  +verifyReader(reader: Reader): bool
+  +issueLoan(reader: Reader, copies: BookCopy[]): Loan
+  +acceptReturn(item: LoanItem): void
+  +registerCopy(book: Book, code: string): BookCopy
+  +canManageUsers(): bool
+}
+
+User <|-- Reader
+User <|-- Librarian
+@enduml
